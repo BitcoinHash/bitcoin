@@ -154,7 +154,6 @@ libbitcoin_common_a_SOURCES = \
   crypto/shavite.c \
   crypto/keccak.c \
   crypto/skein.c \
-  spork.cpp \
   crypto/bmw.c \
   crypto/simd.c \
   crypto/cubehash.c \
