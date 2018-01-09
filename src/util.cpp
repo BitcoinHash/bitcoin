@@ -455,13 +455,13 @@ void PrintExceptionContinue(const std::exception* pex, const char* pszThread)
 boost::filesystem::path GetDefaultDataDir()
 {
     namespace fs = boost::filesystem;
-    // Windows < Vista: C:\Documents and Settings\Username\Application Data\Bitcoin
-    // Windows >= Vista: C:\Users\Username\AppData\Roaming\Bitcoin
-    // Mac: ~/Library/Application Support/Bitcoin
-    // Unix: ~/.bitcoin
+    // Windows < Vista: C:\Documents and Settings\Username\Application Data\Chaincoin_Bridge
+    // Windows >= Vista: C:\Users\Username\AppData\Roaming\Chaincoin_Bridge
+    // Mac: ~/Library/Application Support/Chaincoin_Bridge
+    // Unix: ~/.chaincoin_bridge
 #ifdef WIN32
     // Windows
-    return GetSpecialFolderPath(CSIDL_APPDATA) / "Bitcoin";
+    return GetSpecialFolderPath(CSIDL_APPDATA) / "Chaincoin_Bridge";
 #else
     fs::path pathRet;
     char* pszHome = getenv("HOME");
@@ -471,10 +471,10 @@ boost::filesystem::path GetDefaultDataDir()
         pathRet = fs::path(pszHome);
 #ifdef MAC_OSX
     // Mac
-    return pathRet / "Library/Application Support/Bitcoin";
+    return pathRet / "Library/Application Support/Chaincoin_Bridge";
 #else
     // Unix
-    return pathRet / ".bitcoin";
+    return pathRet / ".chaincoin_bridge";
 #endif
 #endif
 }

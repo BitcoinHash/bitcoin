@@ -60,6 +60,9 @@ struct Params {
     bool fPowNoRetargeting;
     int64_t nPowTargetSpacing;
     int64_t nPowTargetTimespan;
+    int64_t nInterval;
+    int64_t nAveragingInterval;
+    int64_t AveragingTargetTimespan() const { return nAveragingInterval * nPowTargetSpacing; }
     int64_t DifficultyAdjustmentInterval() const { return nPowTargetTimespan / nPowTargetSpacing; }
     uint256 nMinimumChainWork;
 };

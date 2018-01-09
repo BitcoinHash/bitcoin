@@ -288,6 +288,7 @@ struct CMutableTransaction;
  *   - CTxWitness wit;
  * - uint32_t nLockTime
  */
+
 template<typename Stream, typename Operation, typename TxType>
 inline void SerializeTransaction(TxType& tx, Stream& s, Operation ser_action, int nType, int nVersion) {
     READWRITE(*const_cast<int32_t*>(&tx.nVersion));
@@ -342,6 +343,14 @@ inline void SerializeTransaction(TxType& tx, Stream& s, Operation ser_action, in
         }
     }
     READWRITE(*const_cast<uint32_t*>(&tx.nLockTime));
+
+    // Until now, regardless OP_RETURN a special tx message was allowed and
+    // tx version 2 has been dedicated for that
+
+//    if (tx.nVersion == 2) {
+//       READWRITE(*const_cast<std::string*>(strTxComment));
+//    }
+
 }
 
 /** The basic transaction that is broadcasted on the network and contained in
@@ -361,7 +370,8 @@ public:
     // adapting relay policy by bumping MAX_STANDARD_VERSION, and then later date
     // bumping the default CURRENT_VERSION at which point both CURRENT_VERSION and
     // MAX_STANDARD_VERSION will be equal.
-    static const int32_t MAX_STANDARD_VERSION=2;
+
+    static const int32_t MAX_STANDARD_VERSION=3;
 
     // The local variables are made const to prevent unintended modification
     // without updating the cached hash value. However, CTransaction is not
@@ -373,6 +383,7 @@ public:
     const std::vector<CTxOut> vout;
     CTxWitness wit; // Not const: can change without invalidating the txid cache
     const uint32_t nLockTime;
+    std::string strTxComment;
 
     /** Construct a CTransaction that qualifies as IsNull() */
     CTransaction();
@@ -387,6 +398,9 @@ public:
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         SerializeTransaction(*this, s, ser_action, nType, nVersion);
+        if(this->nVersion == 2) {
+            READWRITE(strTxComment);
+        }
         if (ser_action.ForRead()) {
             UpdateHash();
         }
