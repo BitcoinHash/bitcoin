@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2016 The Bitcoin Core developers
+# Copyright (c) 2014-2017 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the rawtransaction RPCs.
@@ -39,6 +39,7 @@ class RawTransactionsTest(BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 3
+        self.extra_args = [["-addresstype=legacy"], ["-addresstype=legacy"], ["-addresstype=legacy"]]
 
     def setup_network(self, split=False):
         super().setup_network()
@@ -189,7 +190,7 @@ class RawTransactionsTest(BitcoinTestFramework):
                 break
 
         bal = self.nodes[0].getbalance()
-        inputs = [{ "txid" : txId, "vout" : vout['n'], "scriptPubKey" : vout['scriptPubKey']['hex']}]
+        inputs = [{ "txid" : txId, "vout" : vout['n'], "scriptPubKey" : vout['scriptPubKey']['hex'], "amount" : vout['value']}]
         outputs = { self.nodes[0].getnewaddress() : 2.19 }
         rawTx = self.nodes[2].createrawtransaction(inputs, outputs)
         rawTxPartialSigned = self.nodes[1].signrawtransaction(rawTx, inputs)
@@ -234,7 +235,7 @@ class RawTransactionsTest(BitcoinTestFramework):
                 break
 
         bal = self.nodes[0].getbalance()
-        inputs = [{ "txid" : txId, "vout" : vout['n'], "scriptPubKey" : vout['scriptPubKey']['hex'], "redeemScript" : mSigObjValid['hex']}]
+        inputs = [{ "txid" : txId, "vout" : vout['n'], "scriptPubKey" : vout['scriptPubKey']['hex'], "redeemScript" : mSigObjValid['hex'], "amount" : vout['value']}]
         outputs = { self.nodes[0].getnewaddress() : 2.19 }
         rawTx2 = self.nodes[2].createrawtransaction(inputs, outputs)
         rawTxPartialSigned1 = self.nodes[1].signrawtransaction(rawTx2, inputs)
@@ -253,6 +254,17 @@ class RawTransactionsTest(BitcoinTestFramework):
         self.sync_all()
         assert_equal(self.nodes[0].getbalance(), bal+Decimal('50.00000000')+Decimal('2.19000000')) #block reward + tx
 
+        # decoderawtransaction tests
+        # witness transaction
+        encrawtx = "010000000001010000000000000072c1a6a246ae63f74f931e8365e15a089c68d61900000000000000000000ffffffff0100e1f50500000000000000000000"
+        decrawtx = self.nodes[0].decoderawtransaction(encrawtx, True) # decode as witness transaction
+        assert_equal(decrawtx['vout'][0]['value'], Decimal('1.00000000'))
+        assert_raises_rpc_error(-22, 'TX decode failed', self.nodes[0].decoderawtransaction, encrawtx, False) # force decode as non-witness transaction
+        # non-witness transaction
+        encrawtx = "01000000010000000000000072c1a6a246ae63f74f931e8365e15a089c68d61900000000000000000000ffffffff0100e1f505000000000000000000"
+        decrawtx = self.nodes[0].decoderawtransaction(encrawtx, False) # decode as non-witness transaction
+        assert_equal(decrawtx['vout'][0]['value'], Decimal('1.00000000'))
+        
         # getrawtransaction tests
         # 1. valid parameters - only supply txid
         txHash = rawTx["hash"]

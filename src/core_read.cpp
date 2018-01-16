@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2016 The Bitcoin Core developers
+// Copyright (c) 2009-2017 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -108,39 +108,39 @@ bool CheckTxScriptsSanity(const CMutableTransaction& tx)
     return true;
 }
 
-bool DecodeHexTx(CMutableTransaction& tx, const std::string& strHexTx, bool fTryNoWitness)
+bool DecodeHexTx(CMutableTransaction& tx, const std::string& hex_tx, bool try_no_witness, bool try_witness)
 {
-    if (!IsHex(strHexTx)) {
+    if (!IsHex(hex_tx)) {
         return false;
     }
 
-    std::vector<unsigned char> txData(ParseHex(strHexTx));
+    std::vector<unsigned char> txData(ParseHex(hex_tx));
 
-    if (fTryNoWitness) {
+    if (try_no_witness) {
         CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS);
         try {
             ssData >> tx;
-            if (ssData.eof() && CheckTxScriptsSanity(tx)) {
+            if (ssData.eof() && (!try_witness || CheckTxScriptsSanity(tx))) {
                 return true;
             }
-        }
-        catch (const std::exception&) {
+        } catch (const std::exception&) {
             // Fall through.
         }
     }
 
-    CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
-    try {
-        ssData >> tx;
-        if (!ssData.empty()) {
-            return false;
+    if (try_witness) {
+        CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
+        try {
+            ssData >> tx;
+            if (ssData.empty()) {
+                return true;
+            }
+        } catch (const std::exception&) {
+            // Fall through.
         }
     }
-    catch (const std::exception&) {
-        return false;
-    }
-
-    return true;
+    
+    return false;
 }
 
 bool DecodeHexBlk(CBlock& block, const std::string& strHexBlk)

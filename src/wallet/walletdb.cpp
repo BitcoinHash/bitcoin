@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2016 The Bitcoin Core developers
+// Copyright (c) 2009-2017 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -626,7 +626,6 @@ DBErrors CWalletDB::LoadWallet(CWallet* pwallet)
 
 DBErrors CWalletDB::FindWalletTx(std::vector<uint256>& vTxHash, std::vector<CWalletTx>& vWtx)
 {
-    bool fNoncriticalErrors = false;
     DBErrors result = DB_LOAD_OK;
 
     try {
@@ -680,9 +679,6 @@ DBErrors CWalletDB::FindWalletTx(std::vector<uint256>& vTxHash, std::vector<CWal
     catch (...) {
         result = DB_CORRUPT;
     }
-
-    if (fNoncriticalErrors && result == DB_LOAD_OK)
-        result = DB_NONCRITICAL_ERROR;
 
     return result;
 }

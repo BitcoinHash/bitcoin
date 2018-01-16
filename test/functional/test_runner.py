@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2016 The Bitcoin Core developers
+# Copyright (c) 2014-2017 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Run regression test suite.
@@ -78,6 +78,7 @@ BASE_SCRIPTS= [
     'abandonconflict.py',
     'bip68-112-113-p2p.py',
     'rawtransactions.py',
+    'address_types.py',
     'reindex.py',
     # vv Tests less than 30s vv
     'keypool-topup.py',
@@ -86,12 +87,14 @@ BASE_SCRIPTS= [
     'mempool_resurrect_test.py',
     'txn_doublespend.py --mineblock',
     'txn_clone.py',
+    'txn_clone.py --segwit',
     'getchaintips.py',
     'rest.py',
     'mempool_spendcoinbase.py',
     'mempool_reorg.py',
     'mempool_persist.py',
     'multiwallet.py',
+    'multiwallet.py --usecli',
     'httpbasics.py',
     'multi_rpc.py',
     'proxy_test.py',
@@ -129,6 +132,9 @@ BASE_SCRIPTS= [
     'p2p-acceptblock.py',
     'feature_logging.py',
     'node_network_limited.py',
+    'conf_args.py',
+    # Don't append tests at the end to avoid merge conflicts
+    # Put them in a random line within the section that fits their approximate run-time
 ]
 
 EXTENDED_SCRIPTS = [
@@ -266,6 +272,7 @@ def main():
         sys.exit(0)
 
     check_script_list(config["environment"]["SRCDIR"])
+    check_script_prefixes()
 
     if not args.keepcache:
         shutil.rmtree("%s/test/cache" % config["environment"]["BUILDDIR"], ignore_errors=True)
@@ -462,6 +469,28 @@ class TestResult():
     @property
     def was_successful(self):
         return self.status != "Failed"
+
+
+def check_script_prefixes():
+    """Check that no more than `EXPECTED_VIOLATION_COUNT` of the
+       test scripts don't start with one of the allowed name prefixes."""
+    EXPECTED_VIOLATION_COUNT = 77
+
+    # LEEWAY is provided as a transition measure, so that pull-requests
+    # that introduce new tests that don't conform with the naming
+    # convention don't immediately cause the tests to fail.
+    LEEWAY = 10
+
+    good_prefixes_re = re.compile("(example|feature|interface|mempool|mining|p2p|rpc|wallet)_")
+    bad_script_names = [script for script in ALL_SCRIPTS if good_prefixes_re.match(script) is None]
+
+    if len(bad_script_names) < EXPECTED_VIOLATION_COUNT:
+        print("{}HURRAY!{} Number of functional tests violating naming convention reduced!".format(BOLD[1], BOLD[0]))
+        print("Consider reducing EXPECTED_VIOLATION_COUNT from %d to %d" % (EXPECTED_VIOLATION_COUNT, len(bad_script_names)))
+    elif len(bad_script_names) > EXPECTED_VIOLATION_COUNT:
+        print("INFO: %d tests not meeting naming conventions (expected %d):" % (len(bad_script_names), EXPECTED_VIOLATION_COUNT))
+        print("  %s" % ("\n  ".join(sorted(bad_script_names))))
+        assert len(bad_script_names) <= EXPECTED_VIOLATION_COUNT + LEEWAY, "Too many tests not following naming convention! (%d found, expected: <= %d)" % (len(bad_script_names), EXPECTED_VIOLATION_COUNT)
 
 
 def check_script_list(src_dir):
